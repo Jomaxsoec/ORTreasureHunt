@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Treasure Hunt Game</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h1 class="mb-0">
+                            <i class="fas fa-cog me-2"></i>
+                            Admin Panel
+                        </h1>
+                        <div>
+                            <button class="btn btn-outline-primary me-2" onclick="refreshData()">
+                                <i class="fas fa-sync-alt me-2"></i>
+                                Refresh
+                            </button>
+                            <button class="btn btn-outline-info me-2" onclick="syncData()">
+                                <i class="fas fa-download me-2"></i>
+                                Sync Data
+                            </button>
+                            <button class="btn btn-outline-danger me-2" onclick="resetGameData()">
+                                <i class="fas fa-trash-alt me-2"></i>
+                                Reset Game
+                            </button>
+                            <a href="/" class="btn btn-outline-secondary">
+                                <i class="fas fa-home me-2"></i>
+                                Back to Game
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="alertContainer"></div>
+
+                        <!-- Statistics Section -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h3><i class="fas fa-chart-bar me-2"></i>Statistics</h3>
+                                <div id="statsContainer">
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Assigned Codes Section -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h3><i class="fas fa-list me-2"></i>Assigned Codes</h3>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Team Name</th>
+                                                <th>Question #</th>
+                                                <th>Assigned Code</th>
+                                                <th>Device Fingerprint</th>
+                                                <th>Assigned At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="codesTableBody">
+                                            <tr>
+                                                <td colspan="6" class="text-center">
+                                                    <div class="spinner-border" role="status">
+                                                        <span class="visually-hidden">Loading...</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Admin-specific JavaScript
+        async function loadAssignedCodes() {
+            try {
+                const response = await fetch('/codes');
+                const data = await response.json();
+
+                const tableBody = document.getElementById('codesTableBody');
+
+                if (data.success) {
+                    if (data.assigned_codes.length === 0) {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">
+                                    <i class="fas fa-inbox me-2"></i>
+                                    No codes assigned yet
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        tableBody.innerHTML = data.assigned_codes.map(code => `
+                            <tr>
+                                <td>${code.id}</td>
+                                <td><strong>${code.team_name}</strong></td>
+                                <td class="text-center">
+                                    <span class="badge bg-primary">${code.question_number}</span>
+                                </td>
+                                <td><code>${code.assigned_code}</code></td>
+                                <td><small class="text-muted">${code.device_fingerprint}</small></td>
+                                <td><small>${new Date(code.assigned_at).toLocaleString()}</small></td>
+                            </tr>
+                        `).join('');
+                    }
+                } else {
+                    showAlert('Error loading assigned codes: ' + data.error, 'danger');
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center text-danger">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Error loading data
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Network error loading assigned codes', 'danger');
+            }
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/stats');
+                const data = await response.json();
+
+                const statsContainer = document.getElementById('statsContainer');
+
+                if (data.success) {
+                    let statsHtml = `
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="card bg-info">
+                                    <div class="card-body text-center">
+                                        <h4>${data.unique_teams}</h4>
+                                        <p class="mb-0">Unique Teams</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                    `;
+
+                    for (let i = 1; i <= 9; i++) {
+                        const questionStats = data.stats[`question_${i}`];
+                        const percentage = questionStats.total > 0 ? 
+                            Math.round((questionStats.assigned / questionStats.total) * 100) : 0;
+
+                        statsHtml += `
+                            <div class="col-md-4 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Question ${i}</h6>
+                                        <div class="progress mb-2">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: ${percentage}%" 
+                                                 aria-valuenow="${percentage}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                ${percentage}%
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            ${questionStats.assigned} assigned / ${questionStats.total} total
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    statsHtml += '</div>';
+                    statsContainer.innerHTML = statsHtml;
+                } else {
+                    showAlert('Error loading statistics: ' + data.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Network error loading statistics', 'danger');
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+
+        function refreshData() {
+            loadAssignedCodes();
+            loadStats();
+        }
+
+        async function syncData() {
+            if (!confirm('Sync data from external database? This will pull the latest team information.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert(`Sync completed! Added ${result.new_teams} new teams, updated ${result.updated_teams} teams.`, 'success');
+                    refreshData();
+                } else {
+                    showAlert('Sync failed: ' + result.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Sync error:', error);
+                showAlert('Network error during sync', 'danger');
+            }
+        }
+
+        async function resetGameData() {
+            if (!confirm('⚠️ WARNING: This will permanently delete ALL team access records and assigned codes!\n\nThis action cannot be undone. Are you sure?')) {
+                return;
+            }
+
+            if (!confirm('Final confirmation: Reset ALL game data?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert(`Game reset completed! Cleared ${result.cleared_teams} teams and ${result.cleared_assignments} assignments.`, 'success');
+                    refreshData();
+                } else {
+                    showAlert('Reset failed: ' + result.error, 'danger');
+                }
+            } catch (error) {
+                console.error('Reset error:', error);
+                showAlert('Network error during reset', 'danger');
+            }
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+        });
+    </script>
+</body>
+</html>

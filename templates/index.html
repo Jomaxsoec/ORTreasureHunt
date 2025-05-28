@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasure Hunt Game</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h1 class="mb-0">
+                            <i class="fas fa-treasure-chest me-2"></i>
+                            Treasure Hunt Game
+                        </h1>
+                        <p class="mt-2 mb-0 text-muted">Enter your team credentials to get your unique code</p>
+                    </div>
+                    <div class="card-body">
+                        <div id="alertContainer"></div>
+
+                        <form id="verifyForm">
+                            <div class="mb-3">
+                                <label for="teamName" class="form-label">
+                                    <i class="fas fa-users me-2"></i>Team Name
+                                </label>
+                                <input type="text" class="form-control" id="teamName" name="team_name" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="teamCode" class="form-label">
+                                    <i class="fas fa-key me-2"></i>Team Code
+                                </label>
+                                <input type="text" class="form-control" id="teamCode" name="team_code" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="qrId" class="form-label">
+                                    <i class="fas fa-qrcode me-2"></i>QR ID (1-9)
+                                </label>
+                                <input type="number" class="form-control" id="qrId" min="1" max="9" required>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                    <i class="fas fa-check me-2"></i>Verify & Get Code
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer text-center text-muted">
+                        <small>Make sure you have the correct team credentials and QR ID</small>
+                    </div>
+                </div>
+
+                <div class="text-center mt-3">
+                    <a href="/admin" class="btn btn-outline-secondary">
+                        <i class="fas fa-cog me-2"></i>Admin Panel
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
